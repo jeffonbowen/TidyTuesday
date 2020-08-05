@@ -1,4 +1,4 @@
-### TidyT uesday Palmer Penguins ---
+### Tidy Tuesday Palmer Penguins ---
 
 
 # I posted a plotly 3d Scatterplot for Tidy Tuesday. The code below also includes some other exploration. 
