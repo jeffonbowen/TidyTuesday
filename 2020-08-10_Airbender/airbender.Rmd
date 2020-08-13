@@ -1,7 +1,7 @@
 ---
 title: "TidyTuesday Airbender"
 author: "Jeff Matheson"
-date: "2020-08-11"
+date: "2020-08-12"
 output: 
   html_notebook:
     theme: flatly
@@ -18,7 +18,11 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 library(tidytuesdayR)
 library(tidyverse)
 library(tvthemes)
+library(extrafont)
 library(skimr)
+
+loadfonts()
+
 ```
 
 # Import Data
@@ -28,12 +32,8 @@ tuesdata <- tidytuesdayR::tt_load('2020-08-11')
 avatar <- tuesdata$avatar
 scene_desc <- tuesdata$scene_description
 ```
-```{r}
-skimr::skim(avatar)
-```
 
-# A Few Summaries
-## Scene-time: total scene frequency by character
+# Scene-time: total lines of dialogue by character
 ```{r summary1, message=FALSE, warning=FALSE}
 avatar %>% 
   group_by(book, character) %>% 
@@ -45,19 +45,8 @@ char_sum
 char_sum
 ```
 
-## Epi-Freq: total episode frequency by character
-```{r summary2, message=FALSE, warning=FALSE}
-avatar %>% 
-  group_by(book, character) %>% 
-  summarize(n=n()) %>% 
-  arrange(desc(n)) %>% 
-  filter(character != "Scene Description") %>% 
-  pivot_wider(id_cols = character, names_from = book, values_from = n) ->
-char_sum
-char_sum
-```
 
-## Are chapter imdb ratings correlated with frequency of a character in a scene?  
+# Are chapter imdb ratings correlated with frequency of a character in a scene?  
 ```{r char_ratings, message=FALSE, warning=FALSE, paged.print=TRUE}
 char_imdb <- avatar %>% 
   filter(character %in% c("Ang", "Katara", "Sokka", "Zuko", "Toph", "Iroh", "Azula")) %>%
@@ -71,14 +60,24 @@ g <- char_imdb %>%
   ggplot(mapping = aes(scene_count, imdb_rating, colour = character)) +
   geom_point() +
   geom_smooth(method='lm', se=FALSE) +
-  labs(title = "Are Chapter IMDB Ratings Correlated with Character Scene Frequency?",
-       colour = "Major Character") +
-  xlab("Number of Scenes Within a Chapter That a Character Occurs In") +
+  labs(
+    title = "Avatar: The Last Airbender",
+    subtitle = "Are Chapter IMDB Ratings Related to Character Lines of Dialogue?",
+    colour = "Major Character"
+    ) +
+  xlab("Character Lines of Dialogue") +
   ylab("IMDB Rating") +
-  theme_theLastAirbender()
+  theme_theLastAirbender(title.font = "Slayer",
+                         text.font = "Slayer",
+                         subtitle.size = 10,
+                         title.size = 13
+                         )
 g
+```
+
+```{r}
+ggsave("airbender.png", g, width = 9, height = 8)
 
 ```
 
 
-table(avatar$)
