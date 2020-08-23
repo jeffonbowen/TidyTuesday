@@ -1,0 +1,173 @@
+---
+title: "TidyTuesday IUCN Extinct Plants"
+author: "Jeff Matheson"
+date: "2020-08-12"
+output: 
+  html_notebook:
+    theme: flatly
+    toc: TRUE
+    toc_float: TRUE
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+#  Required Packages
+```{r packages, message=FALSE}
+library(tidytuesdayR)
+library(tidyverse)
+library(skimr)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(cowplot)
+library(mapproj)
+```
+
+# Import Data
+```{r import, message=FALSE, warning=FALSE}
+tuesdata <- tidytuesdayR::tt_load('2020-08-18')
+plants <- tuesdata$plants
+threats <- tuesdata$threats
+actions <- tuesdata$actions
+```
+
+# Explore Data
+Package {skimr} used to have a quick look at the data characteristics.
+```{r charactersitcs}
+skimr::skim(plants)
+```
+In table species, is each plant listed only once?
+```{r}
+plants %>% 
+  count(binomial_name) %>%
+  filter(n > 1)
+```
+Yes, each species is listed once.
+
+
+Check out tables threats and actions. 
+```{r}
+skim(threats)
+skim(actions)
+```
+
+# Some Summaries
+For categorical data, summary table or plot of frequency by value is the first thing you would do. For continuous data (numeric), frequency historgram, scatterplots and box plots are typical. For this dataset, everyhting is categorical. 
+
+Summary by country:
+```{r}
+extinct_num_country <- plants %>% 
+  count(country, sort = TRUE)
+extinct_num_country
+```
+Summary by continent:
+```{r}
+plants %>%  
+  ggplot(aes(x = continent)) +
+  geom_bar()
+
+# Alternate approach
+# plants %>% count(continent) %>% 
+#   ggplot(aes(continent, n)) +
+#   geom_col()
+
+plants %>%  
+  ggplot(aes(x = group)) +
+  geom_bar()
+
+plants %>%  
+  ggplot(aes(x = year_last_seen)) +
+  geom_bar()
+```
+# Make a Map
+I would like to practice making a map, so will focus on the "plants" data and map the exinctions by country.  
+First get some world map data.
+```{r map}
+world <- ne_countries(scale = "medium", returnclass = "sf") %>% 
+  select(name, name_long, admin, geounit, continent, geometry)
+
+world %>% 
+  ggplot() +
+  geom_sf() +
+  ggtitle("World")
+```
+Check to see if the country names match.
+```{r}
+extinct_num_country %>% 
+  left_join(world, by = c("country" = "name_long")) %>% 
+  filter(is.na(name))
+```
+Yes, there are a few countries whose names don't match up. Make a new version with revised names.
+Congo is an issue  becasue there is actually the Democratic Republic of the Congo and the Republic of Congo. I think I will just use the Democratic Republic of the Congo as it is much larger and on a world map will not be visibly different. 
+Use `case_when` to reclassify.
+```{r message=FALSE, warning=FALSE}
+extinct_num_country_rev <- extinct_num_country %>% 
+  mutate(country = case_when(
+    country == "Saint Helena, Ascension and Tristan da Cunha" ~ "Saint Helena",
+    country == "Congo" ~ "Democratic Republic of the Congo",
+    country == "Viet Nam" ~ "Vietnam",
+    country == "Cabo Verde" ~ "Cape Verde",
+    country == "Sao Tome and Principe" ~ "São Tomé and Principe",
+    country == "Pitcairn" ~ "Pitcairn Islands",
+    TRUE ~ country
+    )
+  )
+extinct_num_country_rev %>% 
+  left_join(world, by = c("country" = "name_long")) %>% 
+  filter(is.na(name))
+```
+Everything matches up now. Move on to making a map.
+```{r}
+# Mollweide
+crs <- "+proj=moll +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs"
+# Robinson projection
+crs <- "+proj=robin +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m no_defs"
+
+cat_levels <- c("None recorded", "1-5", "6-10", "11-20", "21-50", "Over 50")
+
+world %>% 
+  st_transform(crs) %>% 
+  left_join(extinct_num_country_rev, by = c("name_long" = "country")) %>% 
+  mutate(n = replace_na(n, 0),
+         cat = factor(
+           case_when(
+             n == 0 ~ "None recorded",
+             n < 6 ~ "1-5",
+             n < 11 ~ "6-10",
+             n < 21 ~ "11-20",
+             n < 51 ~ "21-50",
+             TRUE ~ "Over 50"
+             ),
+           levels = cat_levels
+           )
+         ) %>% 
+  filter(name_long != "Antarctica") %>% 
+  ggplot() +
+  geom_sf(aes(fill = cat), colour = "grey") +
+  theme_minimal() + 
+  scale_fill_brewer("cat", palette = "Oranges") +
+  ggtitle("Plant Extinctions by Country") +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(hjust = .5, colour = "navy", face = "bold"),
+    plot.background = element_rect(fill = "beige", colour = NA),
+    panel.background = element_rect(fill = "tan", colour = NA),
+      ) + 
+  annotate(geom = "text", 
+                    x = 120, 
+                    y = -60, 
+                    label = "Map projection: Robinson", 
+                    size = 3) +
+  labs(x = "", y = "")
+
+# To Do
+# add a label: Map projection: Robinson 
+
+
+```
+
+
+
+

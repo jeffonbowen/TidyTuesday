@@ -47,7 +47,7 @@ char_sum
 
 
 # Are chapter imdb ratings correlated with frequency of a character in a scene?  
-```{r char_ratings, message=FALSE, warning=FALSE, paged.print=TRUE}
+```{r char_ratings, fig.height=8, fig.width=9, message=FALSE, warning=FALSE, paged.print=TRUE}
 char_imdb <- avatar %>% 
   filter(character %in% c("Ang", "Katara", "Sokka", "Zuko", "Toph", "Iroh", "Azula")) %>%
   mutate(BookandChapter = as.numeric(str_c(book_num, ".", chapter_num))) %>% 
@@ -65,8 +65,8 @@ g <- char_imdb %>%
     subtitle = "Are Chapter IMDB Ratings Related to Character Lines of Dialogue?",
     colour = "Major Character"
     ) +
-  xlab("Character Lines of Dialogue") +
-  ylab("IMDB Rating") +
+  xlab("Character Lines of Dialogue per Chapter") +
+  ylab("Chapter IMDB Rating") +
   theme_theLastAirbender(title.font = "Slayer",
                          text.font = "Slayer",
                          subtitle.size = 10,
@@ -76,7 +76,7 @@ g
 ```
 
 ```{r}
-ggsave("airbender.png", g, width = 9, height = 8)
+ggsave("airbender.png", g, width = 8, height = 7)
 
 ```
 
