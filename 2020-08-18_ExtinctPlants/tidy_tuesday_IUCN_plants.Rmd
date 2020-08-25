@@ -4,7 +4,7 @@ author: "Jeff Matheson"
 date: "2020-08-12"
 output: 
   html_notebook:
-    theme: flatly
+    theme: spacelab
     toc: TRUE
     toc_float: TRUE
 ---
