@@ -4,7 +4,6 @@ author: "Jeff Matheson"
 date: "2020-08-24"
 output: 
   html_notebook:
-    theme: cerulean
     toc: TRUE
     toc_float: TRUE
     
@@ -13,7 +12,44 @@ output:
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 ```
 # Libraries
-```{r}
-
+```{r warnings=false, message=false}
+library(tidytuesdayR)
+library(tidyverse)
+library(skimr)
+data(state)
 ```
+# Import Data
+```{r}
+tuesdata <- tidytuesdayR::tt_load('2020-08-25')
+chopped <- tuesdata$chopped
+rm(tuesdata)
+```
+# Basic Exploration
+Using package {smimr} for basic summary stats.
+```{r}
+skim(chopped)
+```
+# Possible Questions
+
+1. What city/state are contestants from? Could extract the state 2-letter codes.
+2. What are the most-frequent ingredients? 
+3. What ingredients have been used in appetizer+main+dessert? 
+
+# Choice: States That Contenstants Are From
+Use the built in dataset `state` with `state.abb` for abbreviations. 
+I first tried to extract the 2-letter abbreviation by matching to the state codes. Could not get it to work. 
+```{r}
+str_extract(chopped$contestant1_info, state.abb)
+```
+I then tried a simpler approach. The state code in the contestant info is always at the end, if present. Can extract the last two characters and then filter list based on valid state abbreviation to get rid of rows without state. 
+```{r}
+contestants <- chopped %>%
+  select(contains("info")) %>% 
+  pivot_longer(cols = [1:4], names_to = "contestant", values_to = "info")
+```
+
+
+
+state.abb()
+
 
